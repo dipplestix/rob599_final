@@ -13,7 +13,7 @@ class EGCL(nn.Module):
             nn.Linear(2*self.node_dim + 2, self.hidden_dim),
             activation(),
             nn.Linear(self.hidden_dim, self.message_dim),
-            activation(),
+            # activation(),
         )
 
         self.coord_mlp = nn.Sequential(
@@ -38,7 +38,7 @@ class EGCL(nn.Module):
         # Create mask for non-diagonal elements
         mask = ~torch.eye(M, dtype=bool, device=x.device)
 
-        # Efficient reshaping and expansion
+        # Reshaping and expansion
         x_pairs = x.unsqueeze(1).expand(-1, M, -1)[mask].view(M, M-1, N)
         x_expanded = x.unsqueeze(1).expand(-1, M-1, -1)
         r_pairs = r.unsqueeze(1).expand(-1, M, -1)[mask].view(M, M-1, dim)
@@ -59,7 +59,7 @@ class EGCL(nn.Module):
         # Update the position of the nodes
         m = self.edge_mlp(x_concat)
         move_weights = self.coord_mlp(m).view(M, M-1, 1)
-        r = r + (1/(M - 1)) * ((r_pairs - r_expanded) * move_weights).sum(dim=1)
+        r = r + (1/(M - 1)) * ((r_expanded - r_pairs) * move_weights).sum(dim=1)
 
         m = m.view(M, M-1, self.message_dim)
         m = m.sum(dim=1)
